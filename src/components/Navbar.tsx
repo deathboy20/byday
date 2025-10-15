@@ -48,19 +48,22 @@ const Navbar = () => {
                     Find Work
                   </Link>
                 ) : (
-                  <Link to="/jobs/new" className="text-foreground hover:text-primary transition-colors font-medium">
+                  <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors font-medium">
                     Post a Job
                   </Link>
                 )}
               </>
             ) : (
               <>
-                <a href="#how-it-works" className="text-foreground hover:text-primary transition-colors font-medium">
+                <Link to="/how-it-works" className="text-foreground hover:text-primary transition-colors font-medium">
                   How It Works
-                </a>
-                <a href="#features" className="text-foreground hover:text-primary transition-colors font-medium">
+                </Link>
+                <Link to="/features" className="text-foreground hover:text-primary transition-colors font-medium">
                   Features
-                </a>
+                </Link>
+                <Link to="/jobs" className="text-foreground hover:text-primary transition-colors font-medium">
+                  Browse Jobs
+                </Link>
               </>
             )}
           </div>
@@ -149,7 +152,7 @@ const Navbar = () => {
                   </Link>
                 ) : (
                   <Link
-                    to="/jobs/new"
+                    to="/dashboard"
                     className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -177,12 +180,27 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <a href="#how-it-works" className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg">
+                <Link 
+                  to="/how-it-works" 
+                  className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   How It Works
-                </a>
-                <a href="#features" className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg">
+                </Link>
+                <Link 
+                  to="/features" 
+                  className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   Features
-                </a>
+                </Link>
+                <Link 
+                  to="/jobs" 
+                  className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Browse Jobs
+                </Link>
                 <div className="px-4 pt-3 space-y-2 border-t border-border">
                   <Button variant="outline" className="w-full" onClick={() => navigate('/auth')}>
                     <User className="h-4 w-4 mr-2" />

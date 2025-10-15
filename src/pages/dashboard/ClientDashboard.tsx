@@ -121,7 +121,7 @@ const ClientDashboard = () => {
                   title={j.title}
                   description={j.description}
                   rate={`GHS ${Number(j.rate_per_day)}`}
-                  location={j.location}
+                  location={typeof j.location === 'string' ? j.location : (j.location?.address || 'Location not specified')}
                   postedTime={new Date(j.created_at).toLocaleDateString()}
                   clientName="You"
                   clientRating={4.8}

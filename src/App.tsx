@@ -11,6 +11,8 @@ import ClientDashboard from "./pages/dashboard/ClientDashboard";
 import WorkerDashboard from "./pages/dashboard/WorkerDashboard";
 import JobDetails from "./pages/jobs/[id]";
 import JobsPage from "./pages/jobs/index";
+import HowItWorks from "./pages/HowItWorks";
+import Features from "./pages/Features";
 import Navbar from "@/components/Navbar";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/features" element={<Features />} />
               
               {/* Protected Routes */}
               <Route
