@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const WorkerDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch jobs and applications with real-time updates
@@ -30,6 +30,15 @@ const WorkerDashboard = () => {
     job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show loading only on initial auth check
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const handleApply = async (jobId: string) => {
     if (!user) {
@@ -81,14 +90,6 @@ const WorkerDashboard = () => {
       </Badge>
     );
   };
-
-  if (jobsLoading || appsLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import ClientDashboard from "./pages/dashboard/ClientDashboard";
 import WorkerDashboard from "./pages/dashboard/WorkerDashboard";
 import JobDetails from "./pages/jobs/[id]";
+import JobsPage from "./pages/jobs/index";
 import Navbar from "@/components/Navbar";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/jobs" element={<JobsPage />} />
               
               {/* Protected Routes */}
               <Route

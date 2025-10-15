@@ -132,7 +132,7 @@ export const updateJob = async (jobData: JobUpdateInput): Promise<Job> => {
     description: data.description,
     clientId: data.client_id,
     workerId: data.worker_id,
-    status: data.status,
+    status: data.status as any,
     rate: data.rate_per_day,
     duration: data.end_date || 'Not specified',
     location: typeof data.location === 'string' ? JSON.parse(data.location) : data.location,
