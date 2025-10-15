@@ -1,147 +1,209 @@
-# ByDay - Daily Work Platform for Ghana
+Build a location-based daily jobs platform that enables:
 
-A Next.js application connecting skilled workers with clients in Ghana. Find daily work opportunities or post jobs in minutes.
+Clients to post small, short-term tasks.
 
-## Features
+Workers to discover, accept, and complete tasks.
 
-- **Job Marketplace**: Browse and apply for daily work opportunities
-- **Client Dashboard**: Post jobs and manage applications
-- **Worker Dashboard**: Find work and track applications
-- **Authentication**: Secure login with Supabase Auth
-- **Real-time Updates**: Live job postings and applications
+A clean, fast, mobile-first web experience to validate real demand before scaling.
 
-## Tech Stack
+Your MVP should prove three things:
 
-- **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Deployment**: Vercel
+People will use the system to find or post daily jobs.
 
-## Getting Started
+The matching and rating flow works seamlessly.
 
-### Prerequisites
+The pricing and trust system (reviews, basic verification) is enough to keep users returning.
 
-- Node.js 18+ installed
-- A Supabase account and project
+🏗️ 2. Tech Stack (Modern, Fast, Scalable MVP)
+Layer	Tools / Frameworks	Notes
+Frontend	React + TypeScript + Vite	Fast dev/build times, strong type safety.
+UI Framework	Tailwind CSS + shadcn/ui	For clean, modern UI with reusable components.
+State Management	Zustand or Redux Toolkit	Simple store for auth + job listings.
+Routing	React Router v7	For protected routes, onboarding, dashboard, etc.
+Backend (MVP-ready)	Firebase (Auth + Firestore + Storage)	Quick to set up; handles real-time updates and auth easily.
+Location / Maps	Google Maps API or OpenStreetMap (Leaflet)	For job geolocation.
+Payments (optional MVP+)	Paystack or Mobile Money integration	Can simulate payments in early MVP.
+Deployment	Vercel (frontend) + Firebase (backend)	Free-tier friendly, easy CI/CD.
+🧩 3. Core MVP Features (Phased Build Plan)
+🕹️ Phase 1: Foundation
 
-### Installation
+Auth (Sign up / login as worker or client)
 
-1. Clone the repository
+Basic profile setup (skills, photo, bio, location, rate)
 
-2. Install dependencies:
+Job creation (title, description, pay, duration, location)
 
-\`\`\`bash
-npm install
-\`\`\`
+Job feed (filter by proximity, category)
 
-3. **Set up Supabase Database**:
-   - Go to your Supabase project dashboard
-   - Navigate to the SQL Editor
-   - Open the file `scripts/setup-database.sql` from this project
-   - Copy and paste the entire SQL script into the Supabase SQL Editor
-   - Click "Run" to execute the script
-   - This creates all tables, indexes, RLS policies, and triggers
+Job request & accept flow
 
-4. **Configure Environment Variables**:
-   - In the Vercel v0 interface, go to the **Vars** section in the in-chat sidebar
-   - Add the following environment variables:
-     - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL (from Settings → API)
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key (from Settings → API)
-   
-   Alternatively, create a `.env.local` file:
-   \`\`\`bash
-   cp .env.local.example .env.local
-   \`\`\`
-   Then add your Supabase credentials to `.env.local`
+Basic dashboard (My Jobs, History)
+Brand Identity
 
-5. Run the development server:
+Vision: Empower Ghanaians through accessible daily job opportunities.
+Design Tone: Trustworthy, Local, Simple, Human-centered.
+Core Aesthetic: A blend of modern minimalism and local familiarity.
 
-\`\`\`bash
-npm run dev
-\`\`\`
+Element	Description
+Primary Color	#00704A – a confident green (growth, trust, work)
+Accent Color	#F4B400 – warm yellow for action buttons
+Neutral Palette	Shades of #FAFAFA, #E0E0E0, #212121 for structure
+Typography	Inter for body text, Poppins for headers
+Iconography	Lucide React (clean + consistent)
+Imagery	Real photos of Ghanaian workers, friendly & authentic (no stocky feel)
+🧩 Design System
+Components Overview
+Category	Components
+Core UI	Button, Input, Textarea, Select, Modal, Tabs, Snackbar
+Navigation	Top Navbar, Bottom Mobile Nav, Sidebar (for dashboard)
+Cards	Job Card, Worker Card, Review Card, Notification Card
+Data Display	Avatar, Rating Stars, Badge, Progress Bar
+Forms	Job Post Form, Profile Form, Review Form
+Utility	Search Bar, Filter Sheet, Empty State, Skeleton Loader
+⚙️ Component Styles (Example)
+Buttons
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
+Primary: Green background, white text → main CTAs
 
-## Project Structure
+Secondary: White background, green border → neutral actions
 
-\`\`\`
-├── app/                    # Next.js App Router pages
-│   ├── auth/              # Authentication page
-│   ├── dashboard/         # Client and Worker dashboards
-│   ├── layout.tsx         # Root layout with providers
-│   └── page.tsx           # Home page
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   └── ...               # Custom components (navbar, hero, job-card, etc.)
-├── contexts/             # React contexts (Auth)
-├── lib/                  # Utility functions and Supabase clients
-│   └── supabase/         # Supabase client, server, and middleware
-├── scripts/              # Database setup scripts
-└── public/               # Static assets
-\`\`\`
+Destructive: Red tone, used sparingly for cancellation
 
-## Environment Variables
+Inputs
 
-Required environment variables (add these in the **Vars** section of v0 or in `.env.local`):
+Rounded corners (rounded-2xl)
 
-- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+Subtle shadow (shadow-sm)
 
-## Database Schema
+Clear focus states with accent glow (focus:ring-2 focus:ring-green-400)
 
-The app uses the following main tables:
+Cards
 
-- `profiles`: User profiles (workers and clients)
-- `jobs`: Job postings
-- `job_applications`: Worker applications to jobs
-- `reviews`: User reviews
-- `worker_skills`: Worker skills and experience
+Soft shadow (shadow-md hover:shadow-lg transition-all)
 
-All tables include Row Level Security (RLS) policies for data protection.
+Padding p-4, rounded corners (rounded-2xl)
 
-## Demo Accounts
+Mobile responsive grid (grid-cols-1 sm:grid-cols-2 md:grid-cols-3)
 
-The app includes demo accounts for testing (created automatically on first login):
+🧭 User Journey Mapping
+1️⃣ Client Flow (Request a Worker)
 
-- Worker: `worker@demo.byday` / `byday123`
-- Client: `client@demo.byday` / `byday123`
-- Admin: `admin@demo.byday` / `byday123`
+Home: Search or post a task → “Need a painter in Accra?”
 
-Click the demo buttons on the login page to quickly test the application.
+Job Post: Fill quick form → rate, time, description, location.
 
-## Deployment
+Match: View available workers → filter by rating, distance, rate.
 
-Deploy to Vercel:
+Engage: Chat/Call → confirm → mark job as started.
 
-1. Push your code to GitHub
-2. Import the project in Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
+Complete: Leave review → payment confirmation (if integrated).
 
-The app is optimized for Vercel deployment with proper middleware and Supabase SSR integration.
+2️⃣ Worker Flow (Find a Job)
 
-## Troubleshooting
+Home Feed: See latest nearby jobs.
 
-### Missing Environment Variables
-If you see errors about missing Supabase credentials:
-- Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the **Vars** section of the v0 sidebar
-- Or create a `.env.local` file with these variables
+Details Page: Read job info → estimated pay → apply.
 
-### Database Connection Issues
-- Ensure you've run the `scripts/setup-database.sql` script in your Supabase SQL Editor
-- Verify your Supabase project is active and the credentials are correct
+In Progress: Real-time updates on job status.
 
-### Authentication Issues
-- Check that the `handle_new_user` trigger is active in Supabase
-- Verify RLS policies are enabled on all tables
+History: Completed jobs, ratings, and earnings summary.
 
-## Documentation
+3️⃣ Admin Flow
 
-- See `SETUP.md` for detailed setup instructions
-- Database schema is in `scripts/setup-database.sql`
+Manage users, verify accounts, monitor reported jobs.
 
-## License
+Dashboard with metrics: total jobs, active workers, growth charts.
 
-MIT
+📱 Screen Design Overview (Production-Level UI)
+1. Splash / Onboarding
+
+Vibrant illustration of Ghanaian workers.
+
+CTA: “Find Work” / “Post a Job”.
+
+Subtle animation (Framer Motion) for entry transitions.
+
+2. Login / Signup
+
+Clean 2-step process: phone → OTP.
+
+Toggle: “I’m a Worker” / “I’m a Client”.
+
+Simple progress indicator for onboarding completion.
+
+3. Home / Job Feed
+
+Search bar + filters (distance, pay rate, skill).
+
+List of Job Cards: photo, title, rate/day, distance, time posted.
+
+Bottom navigation: Home | Jobs | Messages | Profile.
+
+4. Job Details
+
+Map preview (Google/Leaflet).
+
+Client info (verified badge, rating).
+
+CTA: “Accept Job” → confirmation modal.
+
+5. Chat / Messaging
+
+Real-time messaging (Firebase).
+
+Typing indicator + read receipts.
+
+“Quick Responses” preset (e.g., “I’m on my way.”)
+
+6. Profile (Worker/Client)
+
+Avatar + rating summary.
+
+List of skills, average rate, completed jobs.
+
+“Edit Profile” with skill categories & availability toggles.
+
+7. Admin Dashboard (Web Only)
+
+Metrics: Active jobs, new users, reported issues.
+
+Table views: Workers, Clients, Transactions.
+
+Role-based access (Super Admin / Moderator).
+
+🧠 UX Enhancements
+
+Dark mode toggle for usability at night.
+
+Offline state: Show cached jobs with “Last updated” notice.
+
+Microinteractions: Lottie animations for success, loading, etc.
+
+Accessibility:
+
+Keyboard navigation (tab-friendly)
+
+ARIA labels for screen readers
+
+High-contrast mode toggle
+
+🧰 Developer Handoff Notes
+
+Built with shadcn/ui + Tailwind for clean, consistent design tokens.
+
+Use Framer Motion for animations (layout, fadeInUp, stagger).
+
+Use React Query or TanStack Query for data fetching/caching.
+
+Adopt Atomic Design principle for component organization:
+
+Atoms: Buttons, Inputs, Avatars
+
+Molecules: Cards, Job List Items
+
+Organisms: Feed, Profile, Job Form
+
+Templates: Dashboard, Chat
+
+Pages: Home, Job Details, Admin
+ the name of the project and brand should be "ByDay" and also make sure everything is working with a demo login and also everything should be functional and working including all other dashboards with demo data
