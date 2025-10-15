@@ -1,6 +1,13 @@
-export type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
-export type ApplicationStatus = 'pending' | 'accepted' | 'rejected';
+// Re-export database types for consistency
+export type { JobStatus, ApplicationStatus, Profile, LocationData } from './database';
+export type {
+  Job as DatabaseJob,
+  JobApplication as DatabaseJobApplication,
+  JobWithRelations,
+  JobApplicationWithRelations
+} from './database';
 
+// Frontend-specific types (camelCase for React components)
 export interface User {
   id: string;
   name: string;
@@ -16,7 +23,7 @@ export interface JobApplication {
   id: string;
   job_id: string;
   worker_id: string;
-  status: ApplicationStatus;
+  status: 'pending' | 'accepted' | 'rejected';
   message?: string;
   created_at: string;
   worker?: User;
@@ -31,7 +38,7 @@ export interface Job {
   client?: User;
   workerId?: string;
   worker?: User;
-  status: JobStatus;
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   rate: number;
   duration: string;
   location: {
@@ -73,7 +80,7 @@ export interface JobCreateInput {
 
 export interface JobUpdateInput {
   id: string;
-  status?: JobStatus;
+  status?: 'open' | 'in_progress' | 'completed' | 'cancelled';
   workerId?: string;
   title?: string;
   description?: string;
@@ -92,7 +99,7 @@ export interface JobUpdateInput {
 }
 
 export interface JobFilterOptions {
-  status?: JobStatus | JobStatus[];
+  status?: 'open' | 'in_progress' | 'completed' | 'cancelled' | Array<'open' | 'in_progress' | 'completed' | 'cancelled'>;
   clientId?: string;
   workerId?: string;
   category?: string;

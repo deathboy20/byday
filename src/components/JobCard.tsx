@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Star, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface JobCardProps {
   title: string;
@@ -25,6 +27,17 @@ const JobCard = ({
   category,
   urgent = false,
 }: JobCardProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleApplyClick = () => {
+    if (!user) {
+      navigate('/auth');
+    } else {
+      // Navigate to job details or apply directly
+      navigate('/jobs');
+    }
+  };
   return (
     <div className="bg-card rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-border group cursor-pointer">
       {/* Header */}
@@ -82,8 +95,11 @@ const JobCard = ({
       </div>
 
       {/* Action Button */}
-      <Button className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
-        Apply Now
+      <Button 
+        onClick={handleApplyClick}
+        className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+      >
+        {user ? 'Apply Now' : 'Sign In to Apply'}
       </Button>
     </div>
   );

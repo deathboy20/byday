@@ -130,14 +130,7 @@ const AuthPage = () => {
                 {loading ? "Please wait..." : "Login"}
               </Button>
             </form>
-            <div className="mt-6">
-              <p className="text-sm text-muted-foreground mb-3">Or use a demo account:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button variant="outline" onClick={() => demoLogin("worker")}>Demo Worker</Button>
-                <Button variant="outline" onClick={() => demoLogin("client")}>Demo Client</Button>
-                <Button variant="outline" onClick={() => demoLogin("admin")}>Demo Admin</Button>
-              </div>
-            </div>
+          
           </TabsContent>
 
           <TabsContent value="signup">

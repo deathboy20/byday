@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FC } from "react";
+import { Profile, Job as DatabaseJob } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface Stats {
+
+interface AdminStats {
   totalUsers: number;
   totalWorkers: number;
   totalClients: number;
@@ -36,9 +38,9 @@ interface Stats {
   averageRating: number;
 }
 
-const AdminDashboard = () => {
+const AdminDashboard: FC = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<Stats>({
+  const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalWorkers: 0,
     totalClients: 0,
@@ -48,8 +50,8 @@ const AdminDashboard = () => {
     totalApplications: 0,
     averageRating: 0,
   });
-  const [users, setUsers] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [jobs, setJobs] = useState<DatabaseJob[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -97,7 +99,7 @@ const AdminDashboard = () => {
       });
 
       setUsers(usersData || []);
-      setJobs(jobsData || []);
+      setJobs((jobsData || []) as DatabaseJob[]);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       toast({
@@ -128,11 +130,12 @@ const AdminDashboard = () => {
 
       // Update local state immediately
       setUsers(users.map(u => u.id === userId ? { ...u, verified: newVerified } : u));
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update user";
       toast({
         title: "Error",
-        description: error.message || "Failed to update user",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -185,7 +188,7 @@ const AdminDashboard = () => {
         title: "Report Generated",
         description: "User report has been downloaded successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error generating report:", error);
       toast({
         title: "Error",
@@ -234,7 +237,7 @@ const AdminDashboard = () => {
         title: "Report Generated",
         description: "Client report has been downloaded successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error generating client report:", error);
       toast({
         title: "Error",

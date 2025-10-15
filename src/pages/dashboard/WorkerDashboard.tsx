@@ -64,11 +64,12 @@ const WorkerDashboard = () => {
         title: 'Application submitted!',
         description: 'Your application has been sent to the client.',
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error applying for job:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit application';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to submit application',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

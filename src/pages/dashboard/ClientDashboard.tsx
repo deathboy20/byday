@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, FC } from "react";
+import { Job as DatabaseJob } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,13 +29,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Edit, Trash2, MapPin, DollarSign, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-const ClientDashboard = () => {
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface JobData extends DatabaseJob {
+  // Add any additional fields if needed
+}
+
+const ClientDashboard: FC = () => {
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
-  const [editingJob, setEditingJob] = useState<any | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobData | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let ignore = false;
@@ -59,7 +64,7 @@ const ClientDashboard = () => {
         .order("created_at", { ascending: false });
 
       if (!ignore) {
-        setJobs(jobData ?? []);
+        setJobs((jobData ?? []) as JobData[]);
         setLoading(false);
       }
     };
@@ -101,12 +106,12 @@ const ClientDashboard = () => {
         .select("*")
         .eq("client_id", profileId)
         .order("created_at", { ascending: false });
-      setJobs(data ?? []);
+      setJobs((data ?? []) as JobData[]);
       (e.target as HTMLFormElement).reset();
     }
   };
 
-  const handleEditJob = (job: any) => {
+  const handleEditJob = (job: JobData): void => {
     setEditingJob(job);
     setEditDialogOpen(true);
   };
@@ -142,7 +147,7 @@ const ClientDashboard = () => {
         .select("*")
         .eq("client_id", profileId)
         .order("created_at", { ascending: false });
-      setJobs(data ?? []);
+      setJobs((data ?? []) as JobData[]);
       setEditDialogOpen(false);
       setEditingJob(null);
     }
@@ -165,7 +170,7 @@ const ClientDashboard = () => {
     }
   };
 
-  const getLocationString = (location: any): string => {
+  const getLocationString = (location: string | { address?: string } | null | undefined): string => {
     if (typeof location === 'string') {
       try {
         const parsed = JSON.parse(location);
@@ -177,8 +182,8 @@ const ClientDashboard = () => {
     return location?.address || 'Location not specified';
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: any }> = {
+  const getStatusBadge = (status: string): JSX.Element => {
+    const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
       open: { label: 'Open', variant: 'default' },
       in_progress: { label: 'In Progress', variant: 'secondary' },
       completed: { label: 'Completed', variant: 'outline' },

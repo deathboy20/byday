@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Job, JobStatus, JobFilterOptions, JobApplication } from '@/types/job';
+import { Job, JobFilterOptions, JobApplication } from '@/types/job';
+import { Job as DatabaseJob, LocationData, JobStatus } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
+import { parseLocation } from '@/utils/location';
 
-export const useJobUpdates = (filters: JobFilterOptions = {}) => {
+interface UseJobUpdatesReturn {
+  jobs: Job[];
+  loading: boolean;
+  error: Error | null;
+}
+
+interface UseWorkerApplicationsReturn {
+  applications: JobApplication[];
+  loading: boolean;
+  error: Error | null;
+}
+
+export const useJobUpdates = (filters: JobFilterOptions = {}): UseJobUpdatesReturn => {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Fetch initial jobs
@@ -34,34 +48,32 @@ export const useJobUpdates = (filters: JobFilterOptions = {}) => {
 
         if (error) throw error;
 
-        setJobs(data.map((job: any) => {
-          // Parse location if it's a string
-          let location = job.location;
-          if (typeof location === 'string') {
-            try {
-              location = JSON.parse(location);
-            } catch {
-              location = { address: location, coordinates: { lat: 0, lng: 0 } };
-            }
-          }
+        if (!data) {
+          setJobs([]);
+          return;
+        }
+
+        setJobs(data.map((job): Job => {
+          const dbJob = job as unknown as DatabaseJob;
+          const location = parseLocation(dbJob.location);
           
           return {
-            id: job.id,
-            title: job.title,
-            description: job.description,
-            clientId: job.client_id,
-            workerId: job.worker_id,
-            status: job.status,
-            rate: job.rate_per_day || job.rate,
-            duration: job.end_date ? `Until ${new Date(job.end_date).toLocaleDateString()}` : 'Flexible',
-            location: location || { address: 'Location not specified', coordinates: { lat: 0, lng: 0 } },
-            category: job.category,
-            skillsRequired: job.skills_required || [],
-            createdAt: job.created_at,
-            updatedAt: job.updated_at,
-            urgent: job.urgent || false,
+            id: dbJob.id,
+            title: dbJob.title,
+            description: dbJob.description,
+            clientId: dbJob.client_id,
+            workerId: dbJob.worker_id || undefined,
+            status: dbJob.status as JobStatus,
+            rate: dbJob.rate_per_day,
+            duration: dbJob.end_date ? `Until ${new Date(dbJob.end_date).toLocaleDateString()}` : 'Flexible',
+            location,
+            category: dbJob.category,
+            skillsRequired: dbJob.skills_required || [],
+            createdAt: dbJob.created_at,
+            updatedAt: dbJob.updated_at,
+            urgent: dbJob.urgent || false,
             applicantCount: 0,
-          } as Job;
+          };
         }));
       } catch (err) {
         console.error('Error fetching jobs:', err);
@@ -137,9 +149,9 @@ export const useJobUpdates = (filters: JobFilterOptions = {}) => {
   return { jobs, loading, error };
 };
 
-export const useWorkerApplications = (workerId: string) => {
+export const useWorkerApplications = (workerId: string): UseWorkerApplicationsReturn => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -169,7 +181,7 @@ export const useWorkerApplications = (workerId: string) => {
             description: app.jobs.description,
             clientId: app.jobs.client_id,
             workerId: app.jobs.worker_id,
-            status: app.jobs.status as JobStatus,
+            status: app.jobs.status as 'open' | 'in_progress' | 'completed' | 'cancelled',
             rate: app.jobs.rate_per_day,
             duration: app.jobs.end_date || 'Not specified',
             location: typeof app.jobs.location === 'string' 
@@ -234,7 +246,7 @@ export const useWorkerApplications = (workerId: string) => {
                     description: application.jobs.description,
                     clientId: application.jobs.client_id,
                     workerId: application.jobs.worker_id,
-                    status: application.jobs.status as JobStatus,
+                    status: application.jobs.status as 'open' | 'in_progress' | 'completed' | 'cancelled',
                     rate: application.jobs.rate_per_day,
                     duration: application.jobs.end_date || 'Not specified',
                     location: typeof application.jobs.location === 'string' 
