@@ -110,26 +110,135 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleVerifyUser = async (userId: string, verified: boolean) => {
+  const handleVerifyUser = async (userId: string, currentVerified: boolean) => {
+    const newVerified = !currentVerified;
+    
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ verified })
+        .update({ verified: newVerified })
         .eq("id", userId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `User ${verified ? "verified" : "unverified"} successfully`,
+        description: `User ${newVerified ? "verified" : "unverified"} successfully`,
       });
 
-      loadDashboardData();
-    } catch (error) {
+      // Update local state immediately
+      setUsers(users.map(u => u.id === userId ? { ...u, verified: newVerified } : u));
+    } catch (error: any) {
       console.error("Error updating user:", error);
       toast({
         title: "Error",
-        description: "Failed to update user",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateUserReport = async () => {
+    try {
+      const { data: allUsers } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const { data: allJobs } = await supabase
+        .from("jobs")
+        .select("*");
+
+      const { data: allApplications } = await supabase
+        .from("job_applications")
+        .select("*");
+
+      const report = {
+        generatedAt: new Date().toISOString(),
+        summary: {
+          totalUsers: allUsers?.length || 0,
+          totalWorkers: allUsers?.filter(u => u.user_type === "worker").length || 0,
+          totalClients: allUsers?.filter(u => u.user_type === "client").length || 0,
+          verifiedUsers: allUsers?.filter(u => u.verified).length || 0,
+          totalJobs: allJobs?.length || 0,
+          openJobs: allJobs?.filter(j => j.status === "open").length || 0,
+          completedJobs: allJobs?.filter(j => j.status === "completed").length || 0,
+          totalApplications: allApplications?.length || 0,
+        },
+        users: allUsers,
+        jobs: allJobs,
+        applications: allApplications,
+      };
+
+      // Download as JSON
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `byday-report-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Report Generated",
+        description: "User report has been downloaded successfully",
+      });
+    } catch (error: any) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateClientReport = async () => {
+    try {
+      const { data: clients } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_type", "client")
+        .order("created_at", { ascending: false });
+
+      const { data: clientJobs } = await supabase
+        .from("jobs")
+        .select("*, profiles!jobs_client_id_fkey(full_name, email)")
+        .order("created_at", { ascending: false });
+
+      const report = {
+        generatedAt: new Date().toISOString(),
+        summary: {
+          totalClients: clients?.length || 0,
+          verifiedClients: clients?.filter(c => c.verified).length || 0,
+          totalJobsPosted: clientJobs?.length || 0,
+          activeJobs: clientJobs?.filter(j => j.status === "open" || j.status === "in_progress").length || 0,
+        },
+        clients: clients,
+        jobs: clientJobs,
+      };
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `byday-client-report-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Report Generated",
+        description: "Client report has been downloaded successfully",
+      });
+    } catch (error: any) {
+      console.error("Error generating client report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate client report",
         variant: "destructive",
       });
     }
@@ -172,11 +281,21 @@ const AdminDashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage users, jobs, and monitor platform activity
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage users, jobs, and monitor platform activity
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={generateUserReport}>
+            Generate User Report
+          </Button>
+          <Button variant="outline" onClick={generateClientReport}>
+            Generate Client Report
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -264,25 +383,30 @@ const AdminDashboard = () => {
                   {users.slice(0, 10).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.user_type === "worker" ? "default" : "secondary"}>
+                        <Badge variant={user.user_type === "worker" ? "default" : user.user_type === "client" ? "secondary" : "outline"}>
                           {user.user_type}
                         </Badge>
                       </TableCell>
                       <TableCell>{user.rating?.toFixed(1) || "N/A"}</TableCell>
                       <TableCell>
-                        {user.verified ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-gray-400" />
-                        )}
+                        <div className="flex items-center gap-2">
+                          {user.verified ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-gray-400" />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {user.verified ? "Verified" : "Not verified"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleVerifyUser(user.id, !user.verified)}
+                          variant={user.verified ? "outline" : "default"}
+                          onClick={() => handleVerifyUser(user.id, user.verified)}
                         >
                           {user.verified ? "Unverify" : "Verify"}
                         </Button>

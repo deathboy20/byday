@@ -34,23 +34,35 @@ export const useJobUpdates = (filters: JobFilterOptions = {}) => {
 
         if (error) throw error;
 
-        setJobs(data.map((job: any) => ({
-          id: job.id,
-          title: job.title,
-          description: job.description,
-          clientId: job.client_id,
-          workerId: job.worker_id,
-          status: job.status,
-          rate: job.rate_per_day || job.rate,
-          duration: job.duration,
-          location: job.location || { address: '', coordinates: { lat: 0, lng: 0 } },
-          category: job.category,
-          skillsRequired: job.skills_required || [],
-          createdAt: job.created_at,
-          updatedAt: job.updated_at,
-          urgent: job.urgent,
-          applicantCount: 0,
-        } as Job)));
+        setJobs(data.map((job: any) => {
+          // Parse location if it's a string
+          let location = job.location;
+          if (typeof location === 'string') {
+            try {
+              location = JSON.parse(location);
+            } catch {
+              location = { address: location, coordinates: { lat: 0, lng: 0 } };
+            }
+          }
+          
+          return {
+            id: job.id,
+            title: job.title,
+            description: job.description,
+            clientId: job.client_id,
+            workerId: job.worker_id,
+            status: job.status,
+            rate: job.rate_per_day || job.rate,
+            duration: job.end_date ? `Until ${new Date(job.end_date).toLocaleDateString()}` : 'Flexible',
+            location: location || { address: 'Location not specified', coordinates: { lat: 0, lng: 0 } },
+            category: job.category,
+            skillsRequired: job.skills_required || [],
+            createdAt: job.created_at,
+            updatedAt: job.updated_at,
+            urgent: job.urgent || false,
+            applicantCount: 0,
+          } as Job;
+        }));
       } catch (err) {
         console.error('Error fetching jobs:', err);
         setError(err);
@@ -80,6 +92,15 @@ export const useJobUpdates = (filters: JobFilterOptions = {}) => {
             }
             
             const index = newJobs.findIndex(j => j.id === payload.new?.id);
+            let location = payload.new.location;
+            if (typeof location === 'string') {
+              try {
+                location = JSON.parse(location);
+              } catch {
+                location = { address: location, coordinates: { lat: 0, lng: 0 } };
+              }
+            }
+            
             const updatedJob: Job = {
               id: payload.new.id,
               title: payload.new.title,
@@ -88,13 +109,13 @@ export const useJobUpdates = (filters: JobFilterOptions = {}) => {
               workerId: payload.new.worker_id,
               status: payload.new.status,
               rate: payload.new.rate_per_day || payload.new.rate,
-              duration: payload.new.duration,
-              location: payload.new.location || { address: '', coordinates: { lat: 0, lng: 0 } },
+              duration: payload.new.end_date ? `Until ${new Date(payload.new.end_date).toLocaleDateString()}` : 'Flexible',
+              location: location || { address: 'Location not specified', coordinates: { lat: 0, lng: 0 } },
               category: payload.new.category,
               skillsRequired: payload.new.skills_required || [],
               createdAt: payload.new.created_at,
               updatedAt: payload.new.updated_at,
-              urgent: payload.new.urgent,
+              urgent: payload.new.urgent || false,
             };
 
             if (index >= 0) {
