@@ -200,10 +200,3 @@ Adopt Atomic Design principle for component organization:
 Atoms: Buttons, Inputs, Avatars
 
 Molecules: Cards, Job List Items
-
-Organisms: Feed, Profile, Job Form
-
-Templates: Dashboard, Chat
-
-Pages: Home, Job Details, Admin
- the name of the project and brand should be "ByDay" and also make sure everything is working with a demo login and also everything should be functional and working including all other dashboards with demo data
