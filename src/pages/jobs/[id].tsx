@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getJob, updateJob, applyForJob } from '@/services/jobService';
@@ -5,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, DollarSign, Calendar, User, Check, X, MessageSquare } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Calendar, User, Check, X, MessageSquare, ArrowLeft, Briefcase, Phone, Mail } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
+import JobMap from '@/components/JobMap';
+import ApplicationDialog, { ApplicationData } from '@/components/ApplicationDialog';
 
 export default function JobDetails() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +19,7 @@ export default function JobDetails() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
 
   // Fetch job details
   const { data: job, isLoading, error } = useQuery({
@@ -25,13 +29,17 @@ export default function JobDetails() {
   });
 
   // Apply for job mutation
-  const { mutate: applyForJobMutation } = useMutation({
-    mutationFn: () => applyForJob(id!, user!.id),
+  const { mutate: applyForJobMutation, isPending: isApplying } = useMutation({
+    mutationFn: (applicationData: ApplicationData) => {
+      // In a real app, you'd send this data to the backend
+      return applyForJob(id!, user!.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', id] });
+      setApplicationDialogOpen(false);
       toast({
         title: 'Application submitted!',
-        description: 'Your application has been sent to the client.',
+        description: 'Your application has been sent to the client. They will contact you soon.',
       });
     },
     onError: (error: Error) => {
@@ -43,9 +51,14 @@ export default function JobDetails() {
     },
   });
 
+  const handleApplicationSubmit = (data: ApplicationData) => {
+    applyForJobMutation(data);
+  };
+
   // Update job status mutation
   const { mutate: updateJobStatus } = useMutation({
-    mutationFn: (status: string) => updateJob({ id: id!, status }),
+    mutationFn: (status: 'open' | 'in_progress' | 'completed' | 'cancelled') => 
+      updateJob({ id: id!, status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job', id] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
@@ -67,6 +80,15 @@ export default function JobDetails() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        onClick={() => navigate(-1)}
+        className="mb-6"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
@@ -123,9 +145,13 @@ export default function JobDetails() {
                 </div>
               </div>
 
-              {/* Map placeholder - would be implemented with Google Maps or similar */}
-              <div className="mt-6 h-64 bg-muted rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Map View - {job.location.address}</p>
+              {/* Interactive Map */}
+              <div className="mt-6">
+                <h3 className="font-medium mb-3 flex items-center">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Job Location
+                </h3>
+                <JobMap location={job.location} jobTitle={job.title} />
               </div>
             </CardContent>
           </Card>
@@ -156,13 +182,36 @@ export default function JobDetails() {
               </div>
             </div>
           ) : isWorker && job.status === 'open' && !hasApplied && !isAssigned ? (
-            <Button className="w-full" onClick={() => applyForJobMutation()}>
-              Apply for this Job
-            </Button>
+            <div className="space-y-4">
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={() => setApplicationDialogOpen(true)}
+              >
+                <Briefcase className="h-5 w-5 mr-2" />
+                Apply for this Job
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" size="sm" className="w-full">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Contact Client
+                </Button>
+                <Button variant="outline" size="sm" className="w-full">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Message
+                </Button>
+              </div>
+            </div>
           ) : isWorker && hasApplied ? (
-            <Button variant="outline" className="w-full" disabled>
-              Application Submitted
-            </Button>
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full" disabled>
+                <Check className="h-4 w-4 mr-2" />
+                Application Submitted
+              </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                The client will review your application and contact you soon.
+              </p>
+            </div>
           ) : isWorker && isAssigned ? (
             <div className="space-y-4">
               <Button className="w-full" onClick={() => updateJobStatus('in_progress')}>
@@ -245,6 +294,16 @@ export default function JobDetails() {
           </Card>
         </div>
       </div>
+
+      {/* Application Dialog */}
+      <ApplicationDialog
+        open={applicationDialogOpen}
+        onOpenChange={setApplicationDialogOpen}
+        onSubmit={handleApplicationSubmit}
+        jobTitle={job.title}
+        clientName={job.client?.name}
+        loading={isApplying}
+      />
     </div>
   );
 }

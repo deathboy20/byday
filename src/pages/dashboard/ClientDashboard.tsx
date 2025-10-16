@@ -3,9 +3,12 @@ import { Job as DatabaseJob } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import JobManagementCard from "@/components/JobManagementCard";
+import ReviewDialog, { ReviewData } from "@/components/ReviewDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +43,8 @@ const ClientDashboard: FC = () => {
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobData | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState<boolean>(false);
+  const [reviewingJob, setReviewingJob] = useState<JobData | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -82,9 +87,11 @@ const ClientDashboard: FC = () => {
     const category = String(fd.get("category"));
     const location = String(fd.get("location"));
     const rate = Number(fd.get("rate"));
+    const endDate = String(fd.get("end_date") || "");
+    const urgent = fd.get("urgent") === "on";
 
     if (!title || !description || !category || !location || !rate) {
-      toast({ title: "Fill all fields" });
+      toast({ title: "Fill all fields", variant: "destructive" });
       return;
     }
 
@@ -95,10 +102,12 @@ const ClientDashboard: FC = () => {
       category,
       location: JSON.stringify({ address: location, coordinates: { lat: 0, lng: 0 } }),
       rate_per_day: rate,
+      end_date: endDate || null,
+      urgent,
       status: "open",
     });
 
-    if (error) toast({ title: "Failed to post job", description: error.message });
+    if (error) toast({ title: "Failed to post job", description: error.message, variant: "destructive" });
     else {
       toast({ title: "Job posted successfully!" });
       const { data } = await supabase
@@ -153,21 +162,72 @@ const ClientDashboard: FC = () => {
     }
   };
 
-  const handleDeleteJob = async () => {
-    if (!deleteJobId) return;
-
+  const handleDeleteJob = async (jobId: string) => {
     const { error } = await supabase
       .from("jobs")
       .delete()
-      .eq("id", deleteJobId);
+      .eq("id", jobId);
 
     if (error) {
       toast({ title: "Failed to delete job", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Job deleted successfully!" });
-      setJobs(jobs.filter(j => j.id !== deleteJobId));
-      setDeleteJobId(null);
+      setJobs(jobs.filter(j => j.id !== jobId));
     }
+  };
+
+  const handleStatusChange = async (jobId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("jobs")
+        .update({ status: newStatus })
+        .eq("id", jobId);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Status Updated", 
+        description: `Job status changed to ${newStatus.replace('_', ' ')}` 
+      });
+
+      // Update local state
+      setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus as any } : j));
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to update job status", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleReviewSubmit = async (reviewData: ReviewData) => {
+    if (!reviewingJob) return;
+
+    try {
+      // In a real app, you'd submit this to a reviews table
+      // For now, we'll just show a success message
+      toast({ 
+        title: "Review Submitted", 
+        description: "Thank you for your feedback!" 
+      });
+
+      setReviewDialogOpen(false);
+      setReviewingJob(null);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to submit review", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleReview = (job: JobData) => {
+    setReviewingJob(job);
+    setReviewDialogOpen(true);
   };
 
   const getLocationString = (location: string | { address?: string } | null | undefined): string => {
@@ -218,57 +278,14 @@ const ClientDashboard: FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {jobs.map((job) => (
-                <Card key={job.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <CardTitle className="text-lg line-clamp-2">{job.title}</CardTitle>
-                      {getStatusBadge(job.status)}
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground mt-2">
-                      <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-                      <span className="line-clamp-1">{getLocationString(job.location)}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {job.description}
-                    </p>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1 text-green-600" />
-                        <span className="font-semibold">GHS {job.rate_per_day}</span>
-                      </div>
-                      <Badge variant="outline">{job.category}</Badge>
-                    </div>
-
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Posted {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleEditJob(job)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => setDeleteJobId(job.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <JobManagementCard
+                  key={job.id}
+                  job={job}
+                  onEdit={handleEditJob}
+                  onDelete={handleDeleteJob}
+                  onStatusChange={handleStatusChange}
+                  onReview={handleReview}
+                />
               ))}
             </div>
           )}
@@ -340,53 +357,64 @@ const ClientDashboard: FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteJobId} onOpenChange={() => setDeleteJobId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the job posting
-                and all associated applications.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteJob} className="bg-destructive text-destructive-foreground">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
         <TabsContent value="post" className="mt-6">
-          <form onSubmit={createJob} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card p-4 rounded-xl border">
+          <form onSubmit={createJob} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card p-6 rounded-xl border">
             <div>
-              <Label>Title</Label>
+              <Label>Title *</Label>
               <Input name="title" placeholder="Need a painter" required />
             </div>
             <div>
-              <Label>Category</Label>
+              <Label>Category *</Label>
               <Input name="category" placeholder="Painting" required />
             </div>
             <div>
-              <Label>Location</Label>
+              <Label>Location *</Label>
               <Input name="location" placeholder="Accra" required />
             </div>
             <div>
-              <Label>Rate per day (GHS)</Label>
+              <Label>Rate per day (GHS) *</Label>
               <Input name="rate" type="number" min={1} required />
             </div>
-            <div className="md:col-span-2">
-              <Label>Description</Label>
-              <Input name="description" placeholder="Short description" required />
+            <div>
+              <Label>End Date (Optional)</Label>
+              <Input 
+                name="end_date" 
+                type="date" 
+                min={new Date().toISOString().split('T')[0]}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Leave empty if flexible</p>
+            </div>
+            <div className="flex items-center space-x-2 pt-6">
+              <input
+                type="checkbox"
+                id="urgent"
+                name="urgent"
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="urgent" className="cursor-pointer">
+                Mark as urgent
+              </Label>
             </div>
             <div className="md:col-span-2">
-              <Button type="submit" className="bg-primary text-primary-foreground">Post Job</Button>
+              <Label>Description *</Label>
+              <Textarea name="description" placeholder="Describe the job in detail..." rows={4} required />
+            </div>
+            <div className="md:col-span-2">
+              <Button type="submit" className="bg-primary text-primary-foreground w-full md:w-auto">Post Job</Button>
             </div>
           </form>
         </TabsContent>
       </Tabs>
+
+      {/* Review Dialog */}
+      <ReviewDialog
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        onSubmit={handleReviewSubmit}
+        jobTitle={reviewingJob?.title || ''}
+        workerName="Worker" // In real app, fetch from worker profile
+        loading={false}
+      />
     </div>
   );
 };

@@ -4,8 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CediJobs Design System - Ghanaian Daily Jobs Marketplace */
-
 @layer base {
   :root {
     /* Brand Colors */

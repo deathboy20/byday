@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const schema = z.object({
   email: z.string().trim().email({ message: "Enter a valid email" }).max(255),
@@ -16,9 +23,10 @@ const schema = z.object({
   userType: z.enum(["worker", "client"]).optional(),
 });
 
-const AuthPage = () => {
+const AuthPage = (): JSX.Element => {
   const { signIn, signUp } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [userType, setUserType] = useState<"worker" | "client">("worker");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,7 +37,7 @@ const AuthPage = () => {
     check();
   }, [navigate]);
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email"));
@@ -37,65 +45,63 @@ const AuthPage = () => {
 
     const parsed = schema.pick({ email: true, password: true }).safeParse({ email, password });
     if (!parsed.success) {
-      toast({ title: "Invalid input", description: parsed.error.errors[0].message });
+      toast({ 
+        title: "Invalid input", 
+        description: parsed.error.errors[0].message,
+        variant: "destructive" 
+      });
       return;
     }
 
     setLoading(true);
     const { error } = await signIn(email, password);
-    if (error) toast({ title: "Login failed", description: error });
-    else navigate("/", { replace: true });
-    setLoading(false);
-  };
-
-  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email"));
-    const password = String(formData.get("password"));
-    const fullName = String(formData.get("fullName"));
-    const userType = String(formData.get("userType")) as "worker" | "client";
-
-    const parsed = schema.safeParse({ email, password, fullName, userType });
-    if (!parsed.success) {
-      toast({ title: "Invalid input", description: parsed.error.errors[0].message });
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await signUp(email, password, fullName, userType);
-    if (error) toast({ title: "Signup failed", description: error });
-    else {
-      toast({ title: "Welcome to ByDay", description: "Account created." });
+    if (error) {
+      toast({ 
+        title: "Login failed", 
+        description: error,
+        variant: "destructive" 
+      });
+    } else {
       navigate("/", { replace: true });
     }
     setLoading(false);
   };
 
-  const demoLogin = async (role: "worker" | "client" | "admin") => {
-    setLoading(true);
-    const email = `${role}@demo.byday`;
-    const password = "byday123";
+  const handleSignup = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email"));
+    const password = String(formData.get("password"));
+    const fullName = String(formData.get("fullName"));
 
-    let { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const redirectUrl = `${window.location.origin}/`;
-      const { error: signUpErr } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: redirectUrl, data: { full_name: `Demo ${role}`, user_type: role === "admin" ? "client" : role } },
+    const parsed = schema.safeParse({ email, password, fullName, userType });
+    if (!parsed.success) {
+      toast({ 
+        title: "Invalid input", 
+        description: parsed.error.errors[0].message,
+        variant: "destructive" 
       });
-      if (!signUpErr) {
-        await supabase.auth.signInWithPassword({ email, password });
-      } else {
-        toast({ title: "Demo login failed", description: signUpErr.message });
-      }
+      return;
     }
 
-    navigate("/", { replace: true });
+    setLoading(true);
+    const { error } = await signUp(email, password, fullName, userType);
+    if (error) {
+      toast({ 
+        title: "Signup failed", 
+        description: error,
+        variant: "destructive" 
+      });
+    } else {
+      toast({ 
+        title: "Welcome to ByDay", 
+        description: "Account created. Kindly check your email for verification." 
+      });
+      navigate("/", { replace: true });
+    }
     setLoading(false);
   };
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
@@ -149,10 +155,15 @@ const AuthPage = () => {
               </div>
               <div>
                 <Label htmlFor="userType">I am a</Label>
-                <select id="userType" name="userType" className="w-full bg-background border border-input rounded-md px-3 py-2">
-                  <option value="worker">Worker</option>
-                  <option value="client">Client</option>
-                </select>
+                <Select value={userType} onValueChange={(value: "worker" | "client") => setUserType(value)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select user type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="worker">Worker - Looking for jobs</SelectItem>
+                    <SelectItem value="client">Client - Posting jobs</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 {loading ? "Please wait..." : "Create account"}

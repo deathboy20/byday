@@ -14,6 +14,7 @@ import WorkerDashboard from "./pages/dashboard/WorkerDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import JobDetails from "./pages/jobs/[id]";
 import JobsPage from "./pages/jobs/index";
+import EditJob from "./pages/jobs/edit";
 import HowItWorks from "./pages/HowItWorks";
 import Features from "./pages/Features";
 import About from "./pages/About";
@@ -122,6 +123,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <JobDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditJob />
                   </ProtectedRoute>
                 }
               />
