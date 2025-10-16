@@ -1,3 +1,17 @@
+# ByDay - Daily Work Marketplace for Ghana
+
+## 🚨 Important: Required Package Installation
+
+Before running the application, install the PDF generation dependencies:
+
+```bash
+npm install jspdf jspdf-autotable --legacy-peer-deps
+```
+
+See [INSTALLATION_NOTES.md](./INSTALLATION_NOTES.md) for detailed setup instructions and recent updates.
+
+---
+
 Build a location-based daily jobs platform that enables:
 
 Clients to post small, short-term tasks.

@@ -25,6 +25,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { generateUserPDFReport, generateClientPDFReport } from "@/utils/pdfGenerator";
 
 
 interface AdminStats {
@@ -53,6 +64,7 @@ const AdminDashboard: FC = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [jobs, setJobs] = useState<DatabaseJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -173,26 +185,19 @@ const AdminDashboard: FC = () => {
         applications: allApplications,
       };
 
-      // Download as JSON
-      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `byday-report-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Generate PDF report
+      const filename = generateUserPDFReport(report);
 
       toast({
         title: "Report Generated",
-        description: "User report has been downloaded successfully",
+        description: `PDF report "${filename}" has been downloaded successfully`,
       });
     } catch (error) {
       console.error("Error generating report:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate report";
       toast({
         title: "Error",
-        description: "Failed to generate report",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -215,46 +220,40 @@ const AdminDashboard: FC = () => {
         generatedAt: new Date().toISOString(),
         summary: {
           totalClients: clients?.length || 0,
-          verifiedClients: clients?.filter(c => c.verified).length || 0,
-          totalJobsPosted: clientJobs?.length || 0,
-          activeJobs: clientJobs?.filter(j => j.status === "open" || j.status === "in_progress").length || 0,
+          verifiedUsers: clients?.filter(c => c.verified).length || 0,
+          totalJobs: clientJobs?.length || 0,
+          openJobs: clientJobs?.filter(j => j.status === "open" || j.status === "in_progress").length || 0,
         },
         clients: clients,
         jobs: clientJobs,
       };
 
-      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `byday-client-report-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Generate PDF report
+      const filename = generateClientPDFReport(report);
 
       toast({
         title: "Report Generated",
-        description: "Client report has been downloaded successfully",
+        description: `PDF report "${filename}" has been downloaded successfully`,
       });
     } catch (error) {
       console.error("Error generating client report:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate client report";
       toast({
         title: "Error",
-        description: "Failed to generate client report",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteJob = async (jobId: string) => {
-    if (!confirm("Are you sure you want to delete this job?")) return;
+  const handleDeleteJob = async () => {
+    if (!deleteJobId) return;
 
     try {
       const { error } = await supabase
         .from("jobs")
         .delete()
-        .eq("id", jobId);
+        .eq("id", deleteJobId);
 
       if (error) throw error;
 
@@ -263,6 +262,7 @@ const AdminDashboard: FC = () => {
         description: "Job deleted successfully",
       });
 
+      setDeleteJobId(null);
       loadDashboardData();
     } catch (error) {
       console.error("Error deleting job:", error);
@@ -466,7 +466,7 @@ const AdminDashboard: FC = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeleteJob(job.id)}
+                          onClick={() => setDeleteJobId(job.id)}
                         >
                           Delete
                         </Button>
@@ -535,6 +535,24 @@ const AdminDashboard: FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Job Confirmation Dialog */}
+      <AlertDialog open={!!deleteJobId} onOpenChange={() => setDeleteJobId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this job? This action cannot be undone and will permanently delete the job posting and all associated applications.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Job
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

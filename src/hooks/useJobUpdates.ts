@@ -85,9 +85,10 @@ export const useJobUpdates = (filters: JobFilterOptions = {}): UseJobUpdatesRetu
 
     fetchJobs();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with a unique channel name
+    const channelName = `jobs-${filters.status || 'all'}-${filters.workerId || 'all'}`;
     const subscription = supabase
-      .channel('jobs')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -96,6 +97,27 @@ export const useJobUpdates = (filters: JobFilterOptions = {}): UseJobUpdatesRetu
           table: 'jobs',
         },
         (payload: any) => {
+          // Only update if the change matches our filters
+          const shouldUpdate = () => {
+            if (payload.eventType === 'DELETE') return true;
+            
+            const newJob = payload.new;
+            if (filters.status) {
+              const statusMatch = Array.isArray(filters.status) 
+                ? filters.status.includes(newJob.status)
+                : newJob.status === filters.status;
+              if (!statusMatch) return false;
+            }
+            
+            if (filters.workerId && newJob.worker_id !== filters.workerId) {
+              return false;
+            }
+            
+            return true;
+          };
+
+          if (!shouldUpdate()) return;
+
           setJobs(currentJobs => {
             const newJobs = [...currentJobs];
             
@@ -144,7 +166,7 @@ export const useJobUpdates = (filters: JobFilterOptions = {}): UseJobUpdatesRetu
     return () => {
       subscription.unsubscribe();
     };
-  }, [filters]);
+  }, [JSON.stringify(filters)]);
 
   return { jobs, loading, error };
 };
